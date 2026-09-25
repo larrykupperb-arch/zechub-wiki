@@ -10,6 +10,11 @@ import {
 import { BlockchainInfo, ShieldedTxCount, ZecPrice } from "@/lib/chart/types";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
+import {
+  formatDashboardCurrency,
+  getDashboardCurrency,
+  replaceUsdLabel,
+} from "@/lib/dashboardCurrency";
 import { ErrorBoundary } from "../../../ErrorBoundary/ErrorBoundary";
 import { MetricCard, MetricCardSkeleton } from "./MetricCard";
 
@@ -29,7 +34,9 @@ interface ZcashStatisticsPorps {}
 
 export function ZcashMetrics(props: ZcashStatisticsPorps) {
   const isMobile = useInMobile();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const { code: fiatCode } = getDashboardCurrency(locale);
+  const fiatKey = fiatCode.toLowerCase();
   const metricT = t?.pages?.dashboard?.charts?.zcashMetrics;
   const notAvailable = metricT?.notAvailable || "N/A";
 
@@ -49,7 +56,7 @@ export function ZcashMetrics(props: ZcashStatisticsPorps) {
       try {
         const [chainData, priceData, shieldedTxCount] = await Promise.all([
           getBlockchainData(DATA_URL.blockchainDataUrl, controller.signal),
-          getZecPrice(DATA_URL.pricesUrl, controller.signal),
+          getZecPrice(DATA_URL.pricesUrl, fiatKey, controller.signal),
           getShieldedTxCount(DATA_URL.shieldedTxCountUrl, controller.signal),
         ]);
 
@@ -77,13 +84,15 @@ export function ZcashMetrics(props: ZcashStatisticsPorps) {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [fiatKey]);
 
   const metricsObj = [
     {
       label: metricT?.marketCap || "Market Cap",
-      value: price?.usd_market_cap
-        ? `$${Math.round(price.usd_market_cap).toLocaleString()}`
+      value: price?.fiat_market_cap
+        ? formatDashboardCurrency(Math.round(price.fiat_market_cap), locale, {
+            maximumFractionDigits: 0,
+          })
         : notAvailable,
       icon: <DollarSign size={18} />,
     },
@@ -97,14 +106,26 @@ export function ZcashMetrics(props: ZcashStatisticsPorps) {
     {
       label: metricT?.shieldedValue || "Shielded Value",
       value:
-        blockchainInfo?.shielded_value_zec && price?.usd
-          ? `$${Math.round(blockchainInfo.shielded_value_zec * price.usd).toLocaleString()}`
+        blockchainInfo?.shielded_value_zec && price?.fiat
+          ? formatDashboardCurrency(
+              Math.round(blockchainInfo.shielded_value_zec * price.fiat),
+              locale,
+              { maximumFractionDigits: 0 },
+            )
           : notAvailable,
       icon: <Lock size={18} />,
     },
     {
-      label: metricT?.marketPriceUsd || "Market Price (USD)",
-      value: price?.usd ? `$${price.usd.toFixed(2)}` : notAvailable,
+      label: replaceUsdLabel(
+        metricT?.marketPriceUsd || "Market Price (USD)",
+        fiatCode,
+      ),
+      value: price?.fiat
+        ? formatDashboardCurrency(price.fiat, locale, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: price.fiat < 1 ? 4 : 2,
+          })
+        : notAvailable,
       icon: <TrendingUp size={18} />,
     },
     {
