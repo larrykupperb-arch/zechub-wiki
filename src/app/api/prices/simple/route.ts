@@ -15,7 +15,23 @@ import { NextRequest, NextResponse } from "next/server";
 //     hard key cap as a backstop, and last-good served on upstream failure.
 const CG_BASE = "https://api.coingecko.com/api/v3/simple/price";
 const ALLOWED_IDS = new Set(["zcash"]); // the only coin queried by id in-app
-const ALLOWED_VS = new Set([\n  "usd", "btc", "eur", "brl", "sar", "cny", "inr", "rub", "jpy",\n  "krw", "try", "uah", "kes", "ngn", "ghs",\n]);
+const ALLOWED_VS = new Set([
+  "usd",
+  "btc",
+  "eur",
+  "brl",
+  "sar",
+  "cny",
+  "inr",
+  "rub",
+  "jpy",
+  "krw",
+  "try",
+  "uah",
+  "kes",
+  "ngn",
+  "ghs",
+]);
 const BOOL = new Set(["true", "false"]);
 const BOOL_PARAMS = [
   "include_market_cap",
