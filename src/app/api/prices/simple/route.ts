@@ -8,14 +8,14 @@ import { NextRequest, NextResponse } from "next/server";
 // Hardened against cache-busting fan-out (an attacker varying query strings to
 // force many distinct upstream calls and burn the CoinGecko key/rate limit):
 //   - VALUE allow-lists, not just param names: ids is locked to the coins the
-//     app actually queries (only `zcash`); vs_currencies to usd/btc; booleans
+//     app actually queries (only `zcash`); vs_currencies to the dashboard fiat allow-list plus btc; booleans
 //     to true/false; free-form `names` is length/charset-bounded.
 //   - A process-local memo keyed by the CANONICAL query (params sorted) with a
 //     60s TTL, an in-flight promise per key to coalesce concurrent misses, a
 //     hard key cap as a backstop, and last-good served on upstream failure.
 const CG_BASE = "https://api.coingecko.com/api/v3/simple/price";
 const ALLOWED_IDS = new Set(["zcash"]); // the only coin queried by id in-app
-const ALLOWED_VS = new Set(["usd", "btc"]);
+const ALLOWED_VS = new Set([\n  "usd", "btc", "eur", "brl", "sar", "cny", "inr", "rub", "jpy",\n  "krw", "try", "uah", "kes", "ngn", "ghs",\n]);
 const BOOL = new Set(["true", "false"]);
 const BOOL_PARAMS = [
   "include_market_cap",
