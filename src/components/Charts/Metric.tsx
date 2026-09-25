@@ -1,31 +1,27 @@
 import { useInMobile } from "@/hooks/useInMobile";
+import { useLanguage } from "@/context/LanguageContext";
+import {
+  formatDashboardCurrency,
+  getDashboardCurrency,
+} from "@/lib/dashboardCurrency";
 import { useEffect, useState } from "react";
 import {
   MetricCard,
   MetricCardSkeleton,
 } from "./Zcash/ZcashMetrics/MetricCard";
 
-interface CoinData {
-  usd?: number;
-  btc?: number;
-  usd_market_cap?: number;
-  usd_24h_vol?: number;
-  usd_24h_change?: number;
-}
-
 interface BlockchainInfo {
-  market_cap_usd: number;
-  market_price_usd: number;
+  market_cap_fiat: number;
+  market_price_fiat: number;
   market_price_btc: number;
   blocks: number;
   transactions_24h: number;
 }
 
 const CryptoMetrics = ({ selectedCoin }: { selectedCoin: string }) => {
-  const [coinData, setCoinData] = useState<CoinData | null>(null);
   const [blockchainInfo, setBlockchainInfo] = useState<BlockchainInfo | null>({
-    market_cap_usd: 0,
-    market_price_usd: 0,
+    market_cap_fiat: 0,
+    market_price_fiat: 0,
     market_price_btc: 0,
     blocks: Math.floor(Math.random() * 2000000),
     transactions_24h: 0,
@@ -34,6 +30,9 @@ const CryptoMetrics = ({ selectedCoin }: { selectedCoin: string }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isMobile = useInMobile();
+  const { locale } = useLanguage();
+  const { code: fiatCode } = getDashboardCurrency(locale);
+  const fiatKey = fiatCode.toLowerCase();
 
   useEffect(() => {
     let name = selectedCoin;
@@ -69,7 +68,9 @@ const CryptoMetrics = ({ selectedCoin }: { selectedCoin: string }) => {
         // Fetch price data via the same-origin proxy (keeps the CoinGecko key
         // server-side and the visitor's browser off api.coingecko.com).
         const response = await fetch(
-          `/api/prices/simple?vs_currencies=usd%2Cbtc&names=${encodeURIComponent(
+          `/api/prices/simple?vs_currencies=${encodeURIComponent(
+            `${fiatKey},btc`
+          )}&names=${encodeURIComponent(
             name.toLowerCase()
           )}&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`
         );
@@ -87,20 +88,19 @@ const CryptoMetrics = ({ selectedCoin }: { selectedCoin: string }) => {
         // setCoinData(coinInfo);
 
         // Mock blockchain data (replace with actual API calls)
+        const fiatMarketCap = coinInfo?.[`${fiatKey}_market_cap`] || 0;
+        const fiatPrice = coinInfo?.[fiatKey] || 0;
+
         setBlockchainInfo({
-          market_cap_usd: coinInfo?.usd_market_cap || 0,
-          market_price_usd: coinInfo?.usd || 0,
+          market_cap_fiat: fiatMarketCap,
+          market_price_fiat: fiatPrice,
           market_price_btc: coinInfo?.btc || 0,
           blocks: Math.floor(Math.random() * 2000000),
-          transactions_24h: coinInfo?.usd_24h_vol || 0,
+          transactions_24h: coinInfo?.[`${fiatKey}_24h_vol`] || 0,
         });
 
         setCirculation(
-          Math.floor(
-            coinInfo?.usd_market_cap
-              ? coinInfo?.usd_market_cap / coinInfo?.usd
-              : 0
-          )
+          Math.floor(fiatMarketCap && fiatPrice ? fiatMarketCap / fiatPrice : 0)
         );
       } catch (err) {
         console.error("Failed to fetch coin data:", err);
@@ -111,13 +111,15 @@ const CryptoMetrics = ({ selectedCoin }: { selectedCoin: string }) => {
     };
 
     fetchCoinData();
-  }, [selectedCoin]);
+  }, [selectedCoin, fiatKey]);
 
   const metricsObj = [
     {
       label: "Market Cap",
-      value: blockchainInfo?.market_cap_usd
-        ? `$${blockchainInfo?.market_cap_usd.toLocaleString()}`
+      value: blockchainInfo?.market_cap_fiat
+        ? formatDashboardCurrency(blockchainInfo.market_cap_fiat, locale, {
+            maximumFractionDigits: 0,
+          })
         : "N/A",
     },
     {
@@ -127,9 +129,13 @@ const CryptoMetrics = ({ selectedCoin }: { selectedCoin: string }) => {
         : "N/A",
     },
     {
-      label: "Market Price (USD)",
-      value: blockchainInfo?.market_price_usd
-        ? `$${blockchainInfo?.market_price_usd.toFixed(2)}`
+      label: `Market Price (${fiatCode})`,
+      value: blockchainInfo?.market_price_fiat
+        ? formatDashboardCurrency(blockchainInfo.market_price_fiat, locale, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits:
+              blockchainInfo.market_price_fiat < 1 ? 4 : 2,
+          })
         : "N/A",
     },
     {

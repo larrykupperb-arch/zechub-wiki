@@ -35,18 +35,26 @@ export async function getBlockchainData(
 // ZEC price + market cap via the cached same-origin CoinGecko proxy.
 export async function getZecPrice(
   url: string,
+  currency: string = "usd",
   signal?: AbortSignal,
 ): Promise<ZecPrice | null> {
   try {
-    const res = await fetch(url, { signal });
+    const fiat = currency.toLowerCase();
+    const endpoint = new URL(url, window.location.origin);
+    endpoint.searchParams.set("vs_currencies", `${fiat},btc`);
+
+    const res = await fetch(endpoint.pathname + endpoint.search, { signal });
     if (!res.ok) return null;
     const json = await res.json();
     const z = json?.zcash ?? {};
     return {
-      usd: typeof z.usd === "number" ? z.usd : null,
+      fiat: typeof z[fiat] === "number" ? z[fiat] : null,
       btc: typeof z.btc === "number" ? z.btc : null,
-      usd_market_cap:
-        typeof z.usd_market_cap === "number" ? z.usd_market_cap : null,
+      fiat_market_cap:
+        typeof z[`${fiat}_market_cap`] === "number"
+          ? z[`${fiat}_market_cap`]
+          : null,
+      currency: fiat.toUpperCase(),
     };
   } catch {
     return null;
