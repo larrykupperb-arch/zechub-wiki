@@ -9,9 +9,10 @@ export interface BlockchainInfo {
 
 // ZEC market data from the CoinGecko proxy (/api/prices/simple).
 export interface ZecPrice {
-  usd: number | null;
+  fiat: number | null;
   btc: number | null;
-  usd_market_cap: number | null;
+  fiat_market_cap: number | null;
+  currency: string;
 }
 
 export type PoolKey = "default" | "sprout" | "sapling" | "orchard";
