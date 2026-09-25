@@ -5,6 +5,7 @@ import { getDictionary } from "@/lib/getDictionary";
 import { getBanner } from "@/lib/helpers";
 import { parseMarkdown } from "@/lib/parseMarkdown";
 import WalletList from "@/components/Wallet/WalletList";
+import WalletComparisonProvider from "@/components/Wallet/WalletComparisonProvider";
 import { genMetadata } from "@/lib/helpers";
 import { buildAlternatesAllLocales } from "@/lib/localeCoverage";
 import { routing } from "@/i18n/routing";
@@ -80,7 +81,9 @@ export default async function Page(props: {
       >
         <section className="h-auto w-full">
           <div>
-            <WalletList allWallets={walletsParsed} />
+            <WalletComparisonProvider wallets={walletsParsed}>
+              <WalletList allWallets={walletsParsed} />
+            </WalletComparisonProvider>
           </div>
         </section>
       </div>

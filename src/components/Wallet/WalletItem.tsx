@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   MdThumbDown as Dislike,
   MdThumbUp as Like,
@@ -9,8 +9,10 @@ import {
   MdPool,
   MdOpenInNew as OpenNew,
   MdKeyboardArrowDown,
+  MdCompareArrows,
 } from "react-icons/md";
 import { Icon } from "../UI/Icon";
+import { useWalletComparison } from "./WalletComparisonProvider";
 
 interface WalletItemProps {
   title: string;
@@ -91,6 +93,12 @@ const WalletItem: React.FC<WalletItemProps> = ({
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
+  const comparison = useWalletComparison();
+  const selectedForComparison = comparison.isSelected(title);
+
+  useEffect(() => {
+    if (comparison.enabled) comparison.reportRating(title, likes);
+  }, [comparison, likes, title]);
 
   const handleLike = () => {
     onLike();
@@ -156,15 +164,33 @@ const WalletItem: React.FC<WalletItemProps> = ({
               </span>
             )}
           </h5>
-          <Link
-            href={link}
-            className="px-4 py-2 border border-slate-500 dark:border-slate-400 text-slate-500 dark:text-slate-400 text-sm hover:bg-slate-500 hover:text-white rounded-lg transition whitespace-nowrap"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Open
-            <Icon icon={OpenNew} className="inline-block ms-2" size="small" />
-          </Link>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            {comparison.enabled ? (
+              <button
+                type="button"
+                onClick={() => comparison.toggle(title)}
+                disabled={comparison.isFull && !selectedForComparison}
+                aria-pressed={selectedForComparison}
+                className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition whitespace-nowrap ${
+                  selectedForComparison
+                    ? "border-sky-600 bg-sky-600 text-white"
+                    : "border-slate-400 text-slate-600 hover:border-sky-500 hover:text-sky-600 dark:border-slate-500 dark:text-slate-300 dark:hover:border-sky-400 dark:hover:text-sky-400"
+                } disabled:cursor-not-allowed disabled:opacity-40`}
+              >
+                <Icon icon={MdCompareArrows} className="me-1.5" size="small" />
+                {selectedForComparison ? "Selected" : "Compare"}
+              </button>
+            ) : null}
+            <Link
+              href={link}
+              className="px-4 py-2 border border-slate-500 dark:border-slate-400 text-slate-500 dark:text-slate-400 text-sm hover:bg-slate-500 hover:text-white rounded-lg transition whitespace-nowrap"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open
+              <Icon icon={OpenNew} className="inline-block ms-2" size="small" />
+            </Link>
+          </div>
         </div>
 
         {/* NU6.3 "Ironwood" readiness badge */}
